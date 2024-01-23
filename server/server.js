@@ -2,10 +2,10 @@
 const express = require('express');
 const { ApolloServer } = require('apollo-server-express');
 const mongoose = require('mongoose');
-const { typeDefs, resolvers } = require('./schemas');
-const { authMiddleware } = require('./auth');
+const path = require('path');  // Add this line
+const { typeDefs, resolvers } = require('./schemas/index');
+const { authMiddleware } = require('./utils/auth');
 const routes = require('./routes');
-
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,32 +26,40 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/booksearchengin
   useFindAndModify: false,
 });
 
-// Create an Apollo Server
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  context: ({ req }) => {
-    // Apply authentication middleware
-    const context = { req };
-    authMiddleware(context);
-    return context;
-  },
-});
-
-// Apply Apollo Server as middleware
-server.applyMiddleware({ app, path: '/graphql' });
-
-// The rest of your routes
-app.use(routes);
-
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+const startServer = async () => {
+  // Create an Apollo Server
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: ({ req }) => {
+      // Apply authentication middleware
+      const context = { req };
+      authMiddleware(context);
+      return context;
+    },
   });
-}
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}${server.graphqlPath}`);
-});
+  // Start Apollo Server
+  await server.start();
+
+  // Apply Apollo Server as middleware
+  server.applyMiddleware({ app, path: '/graphql' });
+
+  // The rest of your routes
+  app.use(routes);
+
+  // Serve React app in production
+  if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, '../client/build/index.html'));
+    });
+  }
+
+  // Start the server
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}${server.graphqlPath}`);
+  });
+};
+
+// Call the async function to start the server
+startServer();
