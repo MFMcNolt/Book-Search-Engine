@@ -22,8 +22,6 @@ if (process.env.NODE_ENV === 'production') {
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/booksearchengine', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  useCreateIndex: true,
-  useFindAndModify: false,
 });
 
 const startServer = async () => {
@@ -46,7 +44,7 @@ const startServer = async () => {
   server.applyMiddleware({ app, path: '/graphql' });
 
   // The rest of your routes
-  app.use(routes);
+ // app.use(routes);
 
   // Serve React app in production
   if (process.env.NODE_ENV === 'production') {
