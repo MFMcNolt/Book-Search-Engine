@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 const { typeDefs, resolvers } = require('./schemas');
 const { authMiddleware } = require('./auth');
 const routes = require('./routes');
-const { router, typeDefs, resolvers } = require('./path-to-your-index');
 
 
 const app = express();
