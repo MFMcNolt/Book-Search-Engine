@@ -1,19 +1,19 @@
 import { gql } from '@apollo/client';
 
-// Query to get the logged-in user
+// queries for apollo client
 export const GET_ME = gql`
-  query me {
+  #! Conditionally render data specific to logged in users profile page
+  {
     me {
       _id
       username
       email
-      bookCount
       savedBooks {
         bookId
         authors
+        image
         description
         title
-        image
         link
       }
     }

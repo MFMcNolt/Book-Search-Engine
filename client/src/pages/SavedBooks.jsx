@@ -1,19 +1,26 @@
 import React from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { Container, Card, Button, Row, Col } from 'react-bootstrap';
-import { GET_ME } from '../utils/queries';
-import { REMOVE_BOOK } from '../utils/mutations';
+import {
+  Container,
+  Card,
+  Button,
+  Row,
+  Col
+} from 'react-bootstrap';
+
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_ME } from '../utils/queries';
+import { REMOVE_BOOK } from '../utils/mutations';
 
 const SavedBooks = () => {
   const { loading, data } = useQuery(GET_ME);
-  const [removeBookMutation] = useMutation(REMOVE_BOOK);
+  const userData = data?.me || { savedBooks: [] };
 
-  const userData = data?.me || {};
+  const [removeBook] = useMutation(REMOVE_BOOK);
 
   // create function that accepts the book's mongo _id value as param and deletes the book from the database
-  const handleDeleteBook = async (bookId) => {
+  const handleDeleteBook = async bookId => {
     const token = Auth.loggedIn() ? Auth.getToken() : null;
 
     if (!token) {
@@ -21,11 +28,14 @@ const SavedBooks = () => {
     }
 
     try {
-      const { data } = await removeBookMutation({
-        variables: { bookId },
+      const response = await removeBook({
+        variables: { bookId: bookId, token },
       });
 
-      // Apollo Client automatically updates the cache with the latest data, so no need to setUserData
+      if (!response) {
+        throw new Error('something went wrong!');
+      }
+
       // upon success, remove book's id from localStorage
       removeBookId(bookId);
     } catch (err) {
@@ -37,6 +47,7 @@ const SavedBooks = () => {
   if (loading) {
     return <h2>LOADING...</h2>;
   }
+  console.log(userData);
 
   return (
     <>
@@ -54,8 +65,8 @@ const SavedBooks = () => {
         <Row>
           {userData.savedBooks.map((book) => {
             return (
-              <Col md="4" key={book.bookId}>
-                <Card border='dark'>
+              <Col md="4">
+                <Card key={book.bookId} border='dark'>
                   {book.image ? <Card.Img src={book.image} alt={`The cover for ${book.title}`} variant='top' /> : null}
                   <Card.Body>
                     <Card.Title>{book.title}</Card.Title>

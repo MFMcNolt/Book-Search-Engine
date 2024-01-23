@@ -1,37 +1,41 @@
+const { GraphQLError } = require('graphql');
 const jwt = require('jsonwebtoken');
-const { AuthenticationError } = require('apollo-server-express');
 
-// set token secret and expiration date
-const secret = 'mysecretsshhhhh';
+const secret = 'mysecretssshhhhhhh';
 const expiration = '2h';
 
 module.exports = {
-  authMiddleware: function (context) {
-    // allows the token to be sent via context.req.query or headers
-    let token = context.req.query.token || context.req.headers.authorization;
+  AuthenticationError: new GraphQLError('Could not authenticate user.', {
+    extensions: {
+      code: 'UNAUTHENTICATED',
+    },
+  }),
+  authMiddleware: function ({ req }) {
+    // allows token to be sent via req.body, req.query, or headers
+    let token = req.body.token || req.query.token || req.headers.authorization;
 
-    // ["Bearer", "<tokenvalue>"]
-    if (context.req.headers.authorization) {
+    // We split the token string into an array and return actual token
+    if (req.headers.authorization) {
       token = token.split(' ').pop().trim();
     }
 
     if (!token) {
-      // Return req or context.req here?
-      return context.req;
+      return req;
     }
 
-    // verify token and get user data out of it
+    // if token can be verified, add the decoded user's data to the request so it can be accessed in the resolver
     try {
       const { data } = jwt.verify(token, secret, { maxAge: expiration });
-      context.user = data;
-    } catch (error) {
-      console.log('Invalid token:', error.message);
-      throw new AuthenticationError('Invalid token!');
+      req.user = data;
+    } catch {
+      console.log('Invalid token');
     }
-  },
-  signToken: function ({ username, email, _id }) {
-    const payload = { username, email, _id };
 
+    // return the request object so it can be passed to the resolver as `context`
+    return req;
+  },
+  signToken: function ({ email, name, _id }) {
+    const payload = { email, name, _id };
     return jwt.sign({ data: payload }, secret, { expiresIn: expiration });
   },
 };

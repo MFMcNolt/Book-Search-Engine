@@ -3,46 +3,45 @@ const path = require('path');
 const db = require('./config/connection');
 const { typeDefs, resolvers } = require('./schemas');
 
-// Import the Apollo Server
+// importing the apollo server
 const { ApolloServer } = require('apollo-server-express');
 const { authMiddleware } = require('./utils/auth');
 
 const app = express();
-const PORT = 3005;
+const PORT = process.env.PORT || 3002;
 
-// Middleware to parse URL-encoded data
-app.use(express.urlencoded({ extended: true }));
+// Start the Apollo server
+const startServer = async (typeDefs, resolvers) => {
+  // create a new Apollo server and pass in our schema data
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: authMiddleware, 
+    persistedQueries: false,
+  });
 
-// Middleware to parse JSON data
+  // Set URL encoded data
+app.use(express.urlencoded({ extended: true })); //? If true, data is parsed with qs library which allows nested objects from query string. If false, data is parsed with querystring library which does not support nested objects from query strings
+// Every request goes through this middleware and gets converted to JSON
 app.use(express.json());
 
-// If you're in production, serve client/build as static assets
+// If we're in production, serve client/build as static assets
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
 }
 
-// Catch-all route where any route that isn't defined is treated as a 404 error
+// Catch-all route where any route that isnt defined is treated as a 404 error
 app.get('*', (req, res) => {
   res.sendFile(path.resolve(__dirname, '../client'));
 });
 
-// Start the Apollo server
-const startServer = async () => {
-  // Create a new Apollo server and pass in our schema data
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-    context: authMiddleware,
-    persistedQueries: false,
-  });
-
-  // Start the Apollo server
+  // start the Apollo server
   await server.start();
 
-  // Integrate the Apollo server with the Express application as middleware
+  // integrate our Apollo server with the Express application as middleware
   server.applyMiddleware({ app });
 
-  // Log where to go to test the GQL API
+  // log where to go to test GQL API
   console.info(`Use GraphQL at http://localhost:${PORT}${server.graphqlPath}`);
 
   // Import Mongoose connections the first time the connection is opened
@@ -55,4 +54,4 @@ const startServer = async () => {
 };
 
 // Initialize the Apollo server
-startServer();
+startServer(typeDefs, resolvers);
