@@ -1,9 +1,12 @@
+// server.js
 const express = require('express');
 const { ApolloServer } = require('apollo-server-express');
-const path = require('path');
 const mongoose = require('mongoose');
 const { typeDefs, resolvers } = require('./schemas');
-const { authMiddleware } = require('./auth'); // Adjust the path based on your project structure
+const { authMiddleware } = require('./auth');
+const routes = require('./routes');
+const { router, typeDefs, resolvers } = require('./path-to-your-index');
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,7 +40,7 @@ const server = new ApolloServer({
 });
 
 // Apply Apollo Server as middleware
-server.applyMiddleware({ app });
+server.applyMiddleware({ app, path: '/graphql' });
 
 // The rest of your routes
 app.use(routes);
