@@ -11,7 +11,7 @@ import {
 
 import Auth from '../utils/auth';
 import { searchGoogleBooks } from '../utils/API';
-import { GET_ME, SAVE_BOOK } from '../utils/queries';
+import { SAVE_BOOK } from '../utils/queries';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
 
 const SearchBooks = () => {

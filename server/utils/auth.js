@@ -6,9 +6,8 @@ const secret = 'mysecretsshhhhh';
 const expiration = '2h';
 
 module.exports = {
-  // function for our authenticated routes
   authMiddleware: function (context) {
-    // allows token to be sent via context.req.query or headers
+    // allows the token to be sent via context.req.query or headers
     let token = context.req.query.token || context.req.headers.authorization;
 
     // ["Bearer", "<tokenvalue>"]
@@ -17,7 +16,8 @@ module.exports = {
     }
 
     if (!token) {
-      throw new AuthenticationError('You have no token!');
+      // Return req or context.req here?
+      return context.req;
     }
 
     // verify token and get user data out of it

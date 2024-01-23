@@ -1,63 +1,58 @@
-// server.js
 const express = require('express');
+const path = require('path');
+const db = require('./config/connection');
+const { typeDefs, resolvers } = require('./schemas');
+
+// Import the Apollo Server
 const { ApolloServer } = require('apollo-server-express');
-const mongoose = require('mongoose');
-const path = require('path');  // Add this line
-const { typeDefs, resolvers } = require('./schemas/index');
 const { authMiddleware } = require('./utils/auth');
-const routes = require('./routes');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = 3005;
 
+// Middleware to parse URL-encoded data
 app.use(express.urlencoded({ extended: true }));
+
+// Middleware to parse JSON data
 app.use(express.json());
 
-// if we're in production, serve client/build as static assets
+// If you're in production, serve client/build as static assets
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
 }
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/booksearchengine', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// Catch-all route where any route that isn't defined is treated as a 404 error
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../client'));
 });
 
+// Start the Apollo server
 const startServer = async () => {
-  // Create an Apollo Server
+  // Create a new Apollo server and pass in our schema data
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: ({ req }) => {
-      // Apply authentication middleware
-      const context = { req };
-      authMiddleware(context);
-      return context;
-    },
+    context: authMiddleware,
+    persistedQueries: false,
   });
 
-  // Start Apollo Server
+  // Start the Apollo server
   await server.start();
 
-  // Apply Apollo Server as middleware
-  server.applyMiddleware({ app, path: '/graphql' });
+  // Integrate the Apollo server with the Express application as middleware
+  server.applyMiddleware({ app });
 
-  // The rest of your routes
- // app.use(routes);
+  // Log where to go to test the GQL API
+  console.info(`Use GraphQL at http://localhost:${PORT}${server.graphqlPath}`);
 
-  // Serve React app in production
-  if (process.env.NODE_ENV === 'production') {
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, '../client/build/index.html'));
-    });
-  }
-
-  // Start the server
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}${server.graphqlPath}`);
+  // Import Mongoose connections the first time the connection is opened
+  db.once('open', () => {
+    // Start the server on successful connection
+    app.listen(PORT, () =>
+      console.info(`🌍 Now listening on localhost:${PORT}`)
+    );
   });
 };
 
-// Call the async function to start the server
+// Initialize the Apollo server
 startServer();
